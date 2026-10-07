@@ -16,16 +16,16 @@
  */
 
 window.FIREBASE_CONFIG = {
-  apiKey: "TU_API_KEY_AQUI",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  projectId: "tu-proyecto",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef123456"
+  apiKey: "AIzaSyD49ozYs7cFqxQLZqP0p4_Xp_LfQxrdayA",
+  authDomain: "elrincondelretro-b8c4e.firebaseapp.com",
+  projectId: "elrincondelretro-b8c4e",
+  storageBucket: "elrincondelretro-b8c4e.firebasestorage.app",
+  messagingSenderId: "191985893960",
+  appId: "1:191985893960:web:6a3843872b4e48e3874e7d"
 };
 
 // Comprobación si Firebase está configurado o si está en modo DEMO local
-window.isFirebaseConfigured = function() {
+window.isFirebaseConfigured = function () {
   const localSavedConfig = localStorage.getItem('customwear_firebase_config');
   if (localSavedConfig) {
     try {
@@ -39,7 +39,7 @@ window.isFirebaseConfigured = function() {
     }
   }
 
-  return window.FIREBASE_CONFIG.apiKey && 
-         window.FIREBASE_CONFIG.apiKey !== "TU_API_KEY_AQUI" && 
-         window.FIREBASE_CONFIG.projectId !== "tu-proyecto";
+  return window.FIREBASE_CONFIG.apiKey &&
+    window.FIREBASE_CONFIG.apiKey !== "TU_API_KEY_AQUI" &&
+    window.FIREBASE_CONFIG.projectId !== "tu-proyecto";
 };

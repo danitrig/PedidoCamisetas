@@ -24,7 +24,11 @@ class DatabaseService {
         }
         this.auth = firebase.auth();
         this.firestore = firebase.firestore();
-        this.storage = firebase.storage();
+        try {
+          this.storage = firebase.storage();
+        } catch (e) {
+          this.storage = null;
+        }
         this.isCloud = true;
 
         this.auth.onAuthStateChanged((user) => {
@@ -54,7 +58,7 @@ class DatabaseService {
   /* --------------------------------------------------------------------------
      UTILIDAD: COMPRESIÓN DE IMÁGENES
      -------------------------------------------------------------------------- */
-  async compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
+  async compressImage(file, maxWidth = 900, maxHeight = 900, quality = 0.75) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -137,12 +141,17 @@ class DatabaseService {
         const compressedBlob = await this.compressImage(item.imageFile);
 
         if (this.isCloud && this.storage) {
-          // Subir a Firebase Storage
-          const storageRef = this.storage.ref(`orders/${orderId}/prenda_${i + 1}_${Date.now()}.jpg`);
-          const uploadTask = await storageRef.put(compressedBlob);
-          imageUrl = await uploadTask.ref.getDownloadURL();
+          try {
+            // Subir a Firebase Storage si está habilitado
+            const storageRef = this.storage.ref(`orders/${orderId}/prenda_${i + 1}_${Date.now()}.jpg`);
+            const uploadTask = await storageRef.put(compressedBlob);
+            imageUrl = await uploadTask.ref.getDownloadURL();
+          } catch (storageErr) {
+            console.warn("Firebase Storage no activo o requiere facturación Blaze. Guardando foto comprimida directamente en Firestore:", storageErr);
+            imageUrl = await this.blobToDataURL(compressedBlob);
+          }
         } else {
-          // Guardar como DataURL localmente
+          // Guardar como DataURL directamente en Firestore / Local
           imageUrl = await this.blobToDataURL(compressedBlob);
         }
       } else if (item.existingImageUrl || item.imageUrl) {
