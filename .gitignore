@@ -1,0 +1,5 @@
+# Archivos temporales y de despliegue local
+*.zip
+*.log
+.DS_Store
+Thumbs.db
