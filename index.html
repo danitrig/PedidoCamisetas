@@ -265,6 +265,14 @@
         </div>
 
         <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🛒</div>
+          <div>
+            <div class="kpi-value" id="kpi-ordered-orders" style="color: #38bdf8;">0</div>
+            <div class="kpi-label">Pedidos</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
           <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">💳</div>
           <div>
             <div class="kpi-value" id="kpi-paid-orders" style="color: #34d399;">0</div>
@@ -273,18 +281,26 @@
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.12); color: var(--accent-blue);">✂️</div>
-          <div>
-            <div class="kpi-value" id="kpi-process-orders">0</div>
-            <div class="kpi-label">En Fabricación</div>
-          </div>
-        </div>
-
-        <div class="kpi-card">
           <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.12); color: var(--accent-purple);">🚚</div>
           <div>
             <div class="kpi-value" id="kpi-shipped-orders">0</div>
             <div class="kpi-label">Enviados</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(14, 165, 233, 0.15); color: #7dd3fc;">📦</div>
+          <div>
+            <div class="kpi-value" id="kpi-received-orders" style="color: #7dd3fc;">0</div>
+            <div class="kpi-label">Recibidos</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7;">✅</div>
+          <div>
+            <div class="kpi-value" id="kpi-delivered-orders" style="color: #6ee7b7;">0</div>
+            <div class="kpi-label">Entregados</div>
           </div>
         </div>
 
@@ -307,11 +323,12 @@
 
         <div class="status-tabs">
           <button type="button" class="tab-btn active" data-filter="all">Todos</button>
-          <button type="button" class="tab-btn" data-filter="pendiente">Pendientes</button>
+          <button type="button" class="tab-btn" data-filter="pendiente">⏳ Pendientes</button>
+          <button type="button" class="tab-btn" data-filter="pedido">🛒 Pedidos</button>
           <button type="button" class="tab-btn" data-filter="pagado">💳 Pagados</button>
-          <button type="button" class="tab-btn" data-filter="en_proceso">En Proceso</button>
-          <button type="button" class="tab-btn" data-filter="enviado">Enviados</button>
-          <button type="button" class="tab-btn" data-filter="entregado">Entregados</button>
+          <button type="button" class="tab-btn" data-filter="enviado">🚚 Enviados</button>
+          <button type="button" class="tab-btn" data-filter="recibido">📦 Recibidos</button>
+          <button type="button" class="tab-btn" data-filter="entregado">✅ Entregados</button>
         </div>
       </div>
 
@@ -457,10 +474,11 @@
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
           <select id="detail-status-select" class="form-control" style="width: auto; font-weight: 700;">
             <option value="pendiente">🟡 Pendiente</option>
+            <option value="pedido">🛒 Pedido</option>
             <option value="pagado">💳 Pagado</option>
-            <option value="en_proceso">🔵 En Fabricación</option>
-            <option value="enviado">🟣 Enviado</option>
-            <option value="entregado">🟢 Entregado</option>
+            <option value="enviado">🚚 Enviado</option>
+            <option value="recibido">📦 Recibido</option>
+            <option value="entregado">✅ Entregado</option>
             <option value="cancelado">🔴 Cancelado</option>
           </select>
           <button type="button" class="btn btn-sm btn-primary" id="btn-admin-add-product"

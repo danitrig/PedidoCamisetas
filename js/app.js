@@ -530,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Timeline de Estados
-      const statusList = ['pendiente', 'pagado', 'en_proceso', 'enviado', 'entregado'];
+      const statusList = ['pendiente', 'pedido', 'pagado', 'enviado', 'recibido', 'entregado'];
       const currentIdx = statusList.indexOf(order.status) >= 0 ? statusList.indexOf(order.status) : 0;
 
       trackResultContainer.innerHTML = `
@@ -628,10 +628,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function getStatusBadgeClass(status) {
   switch (status) {
     case 'pendiente': return 'badge-pending';
+    case 'pedido': return 'badge-ordered';
     case 'pagado': return 'badge-paid';
-    case 'en_proceso': return 'badge-processing';
     case 'enviado': return 'badge-shipped';
+    case 'recibido': return 'badge-received';
     case 'entregado': return 'badge-completed';
+    case 'en_proceso': return 'badge-processing';
     case 'cancelado': return 'badge-cancelled';
     default: return 'badge-pending';
   }
@@ -640,10 +642,12 @@ function getStatusBadgeClass(status) {
 function formatStatus(status) {
   switch (status) {
     case 'pendiente': return 'Pendiente';
+    case 'pedido': return 'Pedido';
     case 'pagado': return 'Pagado';
-    case 'en_proceso': return 'En Fabricación';
     case 'enviado': return 'Enviado';
+    case 'recibido': return 'Recibido';
     case 'entregado': return 'Entregado';
+    case 'en_proceso': return 'En Fabricación';
     case 'cancelado': return 'Cancelado';
     default: return status;
   }

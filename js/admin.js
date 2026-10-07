@@ -24,9 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // KPIs
   const kpiTotalEl = document.getElementById('kpi-total-orders');
   const kpiPendingEl = document.getElementById('kpi-pending-orders');
+  const kpiOrderedEl = document.getElementById('kpi-ordered-orders');
   const kpiPaidEl = document.getElementById('kpi-paid-orders');
-  const kpiProcessEl = document.getElementById('kpi-process-orders');
   const kpiShippedEl = document.getElementById('kpi-shipped-orders');
+  const kpiReceivedEl = document.getElementById('kpi-received-orders');
+  const kpiDeliveredEl = document.getElementById('kpi-delivered-orders');
   const kpiGarmentsEl = document.getElementById('kpi-total-garments');
 
   // Listado y Filtros
@@ -233,24 +235,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateKPIs(orders) {
     let pending = 0;
+    let ordered = 0;
     let paid = 0;
-    let process = 0;
     let shipped = 0;
+    let received = 0;
+    let delivered = 0;
     let totalGarments = 0;
 
     orders.forEach(o => {
       if (o.status === 'pendiente') pending++;
-      if (o.status === 'pagado') paid++;
-      if (o.status === 'en_proceso') process++;
-      if (o.status === 'enviado' || o.status === 'entregado') shipped++;
+      else if (o.status === 'pedido') ordered++;
+      else if (o.status === 'pagado') paid++;
+      else if (o.status === 'enviado') shipped++;
+      else if (o.status === 'recibido') received++;
+      else if (o.status === 'entregado') delivered++;
       if (o.items && Array.isArray(o.items)) totalGarments += o.items.length;
     });
 
     if (kpiTotalEl) kpiTotalEl.textContent = orders.length;
     if (kpiPendingEl) kpiPendingEl.textContent = pending;
+    if (kpiOrderedEl) kpiOrderedEl.textContent = ordered;
     if (kpiPaidEl) kpiPaidEl.textContent = paid;
-    if (kpiProcessEl) kpiProcessEl.textContent = process;
     if (kpiShippedEl) kpiShippedEl.textContent = shipped;
+    if (kpiReceivedEl) kpiReceivedEl.textContent = received;
+    if (kpiDeliveredEl) kpiDeliveredEl.textContent = delivered;
     if (kpiGarmentsEl) kpiGarmentsEl.textContent = totalGarments;
   }
 
@@ -1223,10 +1231,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function getStatusBadgeClass(status) {
   switch (status) {
     case 'pendiente': return 'badge-pending';
+    case 'pedido': return 'badge-ordered';
     case 'pagado': return 'badge-paid';
-    case 'en_proceso': return 'badge-processing';
     case 'enviado': return 'badge-shipped';
+    case 'recibido': return 'badge-received';
     case 'entregado': return 'badge-completed';
+    case 'en_proceso': return 'badge-processing';
     case 'cancelado': return 'badge-cancelled';
     default: return 'badge-pending';
   }
@@ -1235,10 +1245,12 @@ function getStatusBadgeClass(status) {
 function formatStatus(status) {
   switch (status) {
     case 'pendiente': return 'Pendiente';
+    case 'pedido': return 'Pedido';
     case 'pagado': return 'Pagado';
-    case 'en_proceso': return 'En Fabricación';
     case 'enviado': return 'Enviado';
+    case 'recibido': return 'Recibido';
     case 'entregado': return 'Entregado';
+    case 'en_proceso': return 'En Fabricación';
     case 'cancelado': return 'Cancelado';
     default: return status;
   }
