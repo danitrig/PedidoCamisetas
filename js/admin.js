@@ -79,12 +79,46 @@ document.addEventListener('DOMContentLoaded', () => {
   const editItemName = document.getElementById('edit-item-name');
   const editItemNumber = document.getElementById('edit-item-number');
   const editItemPatch = document.getElementById('edit-item-patch');
+  const editItemPatchDescWrap = document.getElementById('edit-item-patch-desc-wrap');
+  const editItemPatchDesc = document.getElementById('edit-item-patch-desc');
   const editItemSalePrice = document.getElementById('edit-item-saleprice');
   const editItemCostPrice = document.getElementById('edit-item-costprice');
   const editItemFileInput = document.getElementById('edit-item-file-input');
   const editItemExistingImgUrl = document.getElementById('edit-item-existing-img-url');
   const editItemPreviewImg = document.getElementById('edit-item-preview-img');
   const btnSaveEditedProduct = document.getElementById('btn-save-edited-product');
+
+  // Subpestañas Principales Admin: Pedidos vs Todas las Prendas
+  const tabNavOrders = document.getElementById('tab-nav-orders');
+  const tabNavGarments = document.getElementById('tab-nav-garments');
+  const adminViewOrdersTab = document.getElementById('admin-view-orders-tab');
+  const adminViewGarmentsTab = document.getElementById('admin-view-garments-tab');
+  const badgeCountOrders = document.getElementById('badge-count-orders');
+  const badgeCountGarments = document.getElementById('badge-count-garments');
+
+  // Vista Todas las Prendas
+  const adminGarmentsSearchInput = document.getElementById('admin-garments-search-input');
+  const garmentsFactoryFilterTabs = document.querySelectorAll('#garments-factory-filter-tabs .tab-btn');
+  const checkSelectAllGarments = document.getElementById('check-select-all-garments');
+  const garmentsSelectedCountLabel = document.getElementById('garments-selected-count-label');
+  const btnExportSupplierPdf = document.getElementById('btn-export-supplier-pdf');
+  const btnSupplierCount = document.getElementById('btn-supplier-count');
+  const btnBatchMarkOrderedSi = document.getElementById('btn-batch-mark-ordered-si');
+  const btnBatchMarkOrderedNo = document.getElementById('btn-batch-mark-ordered-no');
+  const allGarmentsTbody = document.getElementById('all-garments-tbody');
+
+  // Elementos Ficha Proveedor / Taller
+  const workshopModalTitle = document.getElementById('workshop-modal-title');
+  const supplierOrderCodeText = document.getElementById('supplier-order-code-text');
+  const supplierSheetDate = document.getElementById('supplier-sheet-date');
+  const supplierSheetTotalCount = document.getElementById('supplier-sheet-total-count');
+  const supplierBlocksContainer = document.getElementById('supplier-blocks-container');
+
+  let activeExportFilename = '';
+  let allGarmentsData = [];
+  const selectedGarmentKeys = new Set();
+  let garmentFactoryFilter = 'all'; // 'all', 'NO', 'SI'
+  let garmentSearchQuery = '';
 
   // Modal de Configuración de Firebase
   const btnOpenFirebaseConfig = document.getElementById('btn-open-firebase-config');
@@ -218,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
       allOrders = await window.dbService.getOrders();
       updateKPIs(allOrders);
       renderOrdersList();
+      renderAllGarmentsView();
     } catch (err) {
       console.error(err);
       if (ordersListEl) {
@@ -230,6 +265,24 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRefresh.addEventListener('click', () => {
       loadOrders();
       showToast('Listado actualizado', 'info');
+    });
+  }
+
+  // Cambio de pestañas principales Admin: Pedidos vs Todas las Prendas
+  if (tabNavOrders && tabNavGarments) {
+    tabNavOrders.addEventListener('click', () => {
+      tabNavOrders.classList.add('active');
+      tabNavGarments.classList.remove('active');
+      if (adminViewOrdersTab) adminViewOrdersTab.style.display = 'block';
+      if (adminViewGarmentsTab) adminViewGarmentsTab.style.display = 'none';
+    });
+
+    tabNavGarments.addEventListener('click', () => {
+      tabNavGarments.classList.add('active');
+      tabNavOrders.classList.remove('active');
+      if (adminViewOrdersTab) adminViewOrdersTab.style.display = 'none';
+      if (adminViewGarmentsTab) adminViewGarmentsTab.style.display = 'block';
+      renderAllGarmentsView();
     });
   }
 
@@ -513,8 +566,9 @@ document.addEventListener('DOMContentLoaded', () => {
       sumSale += sale;
       sumCost += cost;
 
-      const patch = (item.patch || 'NO').toUpperCase();
-      const patchClass = patch === 'YES' || patch === 'LIGA' || patch === 'CHAMPIONS' ? 'pill-patch-yes' : 'pill-patch-no';
+      const hasPatch = item.patch && item.patch !== 'NO';
+      const patchText = hasPatch ? (item.patchDetails || (item.patch !== 'YES' ? item.patch : 'SÍ')) : 'NO';
+      const patchClass = hasPatch ? 'pill-patch-yes' : 'pill-patch-no';
 
       rowsHtml += `
         <tr>
@@ -532,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-family:var(--font-heading); font-size:1rem; font-weight:800; color:var(--accent-cyan);">${item.customNumber ? '#' + item.customNumber : ''}</div>
           </td>
           <td>
-            <span class="pill-patch ${patchClass}">${patch}</span>
+            <span class="pill-patch ${patchClass}">${escapeHtml(patchText.toUpperCase())}</span>
           </td>
           <td style="font-family:var(--font-heading); font-weight:800; color:#34d399; font-size:1.05rem;">
             ${sale.toFixed(2)} €
@@ -599,7 +653,9 @@ document.addEventListener('DOMContentLoaded', () => {
     editItemSize.value = 'M';
     editItemName.value = '';
     editItemNumber.value = '';
-    editItemPatch.value = 'YES';
+    editItemPatch.value = 'NO';
+    if (editItemPatchDesc) editItemPatchDesc.value = '';
+    if (editItemPatchDescWrap) editItemPatchDescWrap.style.display = 'none';
     editItemSalePrice.value = '15.00';
     editItemCostPrice.value = '10.00';
     editItemExistingImgUrl.value = '';
@@ -620,7 +676,13 @@ document.addEventListener('DOMContentLoaded', () => {
     editItemSize.value = item.size || 'M';
     editItemName.value = item.customName || '';
     editItemNumber.value = item.customNumber || '';
-    editItemPatch.value = item.patch || 'YES';
+
+    const hasPatch = item.patch && item.patch !== 'NO';
+    editItemPatch.value = hasPatch ? 'YES' : 'NO';
+    const patchDescVal = item.patchDetails || (item.patch && item.patch !== 'NO' && item.patch !== 'YES' ? item.patch : '');
+    if (editItemPatchDesc) editItemPatchDesc.value = patchDescVal;
+    if (editItemPatchDescWrap) editItemPatchDescWrap.style.display = hasPatch ? 'block' : 'none';
+
     editItemSalePrice.value = (parseFloat(item.salePrice) || 0).toFixed(2);
     editItemCostPrice.value = (parseFloat(item.costPrice) || 0).toFixed(2);
     editItemExistingImgUrl.value = item.imageUrl || '';
@@ -634,6 +696,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     productEditModal.classList.add('active');
+  }
+
+  // Desplegar campo de texto del parche al poner YES en administrador
+  if (editItemPatch) {
+    editItemPatch.addEventListener('change', () => {
+      if (editItemPatch.value === 'YES') {
+        if (editItemPatchDescWrap) editItemPatchDescWrap.style.display = 'block';
+        if (editItemPatchDesc) setTimeout(() => editItemPatchDesc.focus(), 60);
+      } else {
+        if (editItemPatchDescWrap) editItemPatchDescWrap.style.display = 'none';
+        if (editItemPatchDesc) editItemPatchDesc.value = '';
+      }
+    });
   }
 
   // Previsualización instantánea al seleccionar foto nueva
@@ -664,7 +739,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const size = editItemSize.value.trim().toUpperCase();
       const customName = editItemName.value.trim().toUpperCase();
       const customNumber = editItemNumber.value.trim();
-      const patch = editItemPatch.value;
+      const patchChoice = editItemPatch.value;
+      const patchDesc = editItemPatchDesc ? editItemPatchDesc.value.trim() : '';
+      const patch = patchChoice === 'NO' ? 'NO' : (patchDesc || 'YES');
+      const patchDetails = patchChoice === 'NO' ? '' : patchDesc;
+
       const salePrice = parseFloat(editItemSalePrice.value) || 0;
       const costPrice = parseFloat(editItemCostPrice.value) || 0;
       let imageUrl = editItemExistingImgUrl.value;
@@ -690,6 +769,8 @@ document.addEventListener('DOMContentLoaded', () => {
           customName,
           customNumber,
           patch,
+          patchDetails,
+          orderedToFactory: (idx !== -1 && activeOrder.items[idx]?.orderedToFactory) || 'NO',
           salePrice,
           costPrice,
           imageUrl,
@@ -907,111 +988,436 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     DOCUMENTO 2: FICHA DE TALLER & PRODUCCIÓN (OPTIMIZADA PARA OPERARIOS)
-     (FOTOS GRANDES 135px, TALLA VISIBLE, DORSALES GIGANTES Y CHECKLIST QC)
+     VISTA 2: GESTIÓN GLOBAL DE TODAS LAS PRENDAS & PROVEEDOR
      ========================================================================== */
+  function renderAllGarmentsView() {
+    allGarmentsData = [];
+    (allOrders || []).forEach(order => {
+      const items = order.items || [];
+      items.forEach((item, idx) => {
+        const key = `${order.orderCode}_${idx}`;
+        allGarmentsData.push({
+          key,
+          orderCode: order.orderCode,
+          customerName: order.customerName || `${order.firstName || ''} ${order.lastName || ''}`.trim() || 'Cliente',
+          phone: order.phone || '',
+          orderDate: order.orderDate || '',
+          orderStatus: order.status || 'pendiente',
+          itemIndex: idx,
+          item: item
+        });
+      });
+    });
+
+    if (badgeCountOrders) badgeCountOrders.textContent = (allOrders || []).length;
+    if (badgeCountGarments) badgeCountGarments.textContent = allGarmentsData.length;
+
+    // Filtrar prendas según búsqueda y estado de fábrica
+    const filtered = allGarmentsData.filter(rec => {
+      const isOrdered = (rec.item.orderedToFactory || 'NO').toUpperCase() === 'SI';
+      if (garmentFactoryFilter === 'NO' && isOrdered) return false;
+      if (garmentFactoryFilter === 'SI' && !isOrdered) return false;
+
+      if (garmentSearchQuery) {
+        const q = garmentSearchQuery.toLowerCase();
+        const matchCode = (rec.orderCode || '').toLowerCase().includes(q);
+        const matchCustomer = (rec.customerName || '').toLowerCase().includes(q);
+        const matchName = (rec.item.customName || '').toLowerCase().includes(q);
+        const matchNum = (rec.item.customNumber || '').toLowerCase().includes(q);
+        const matchSize = (rec.item.size || '').toLowerCase().includes(q);
+        const matchPatch = (rec.item.patchDetails || rec.item.patch || '').toLowerCase().includes(q);
+        return matchCode || matchCustomer || matchName || matchNum || matchSize || matchPatch;
+      }
+
+      return true;
+    });
+
+    renderAllGarmentsTable(filtered);
+    updateGarmentsSelectionUI(filtered);
+  }
+
+  function renderAllGarmentsTable(garments) {
+    if (!allGarmentsTbody) return;
+
+    if (garments.length === 0) {
+      allGarmentsTbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align:center; padding:3rem; color:var(--text-secondary);">
+            No se encontraron prendas con los filtros actuales.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    allGarmentsTbody.innerHTML = garments.map(rec => {
+      const it = rec.item;
+      const isSelected = selectedGarmentKeys.has(rec.key);
+      const isOrdered = (it.orderedToFactory || 'NO').toUpperCase() === 'SI';
+
+      // Parche
+      const hasPatch = it.patch && it.patch !== 'NO';
+      const patchLabel = hasPatch ? (it.patchDetails || (it.patch !== 'YES' ? it.patch : 'SÍ')) : 'NO';
+      const patchClass = hasPatch ? 'pill-patch-yes' : 'pill-patch-no';
+
+      // Nombre y Dorsal
+      const name = (it.customName || '').trim();
+      const num = (it.customNumber || '').trim();
+      let printHtml = '<span style="color:var(--text-muted); font-size:0.8rem;">Sin personalizar</span>';
+      if (name || num) {
+        printHtml = `<div style="font-weight:700; color:#fff; font-size:0.88rem;">${escapeHtml(name.toUpperCase())}</div>
+                     <div style="font-family:var(--font-heading); font-weight:800; color:var(--accent-cyan); font-size:0.95rem;">${num ? '#' + escapeHtml(num) : ''}</div>`;
+      }
+
+      return `
+        <tr data-key="${rec.key}">
+          <td style="text-align:center;">
+            <input type="checkbox" class="garment-row-check" data-key="${rec.key}" ${isSelected ? 'checked' : ''}>
+          </td>
+          <td>
+            <img src="${it.imageUrl || 'assets/sample-jersey.jpg'}" alt="Prenda" class="product-thumb-table" 
+              onclick="window.openImageZoom('${it.imageUrl || 'assets/sample-jersey.jpg'}')" title="Clic para ampliar">
+          </td>
+          <td>
+            <span class="pill-version">${escapeHtml(it.version || 'FAN')}</span>
+          </td>
+          <td style="font-weight:700; color:#fff;">
+            ${escapeHtml((it.size || 'M').toUpperCase())}
+          </td>
+          <td>
+            ${printHtml}
+          </td>
+          <td>
+            <span class="pill-patch ${patchClass}">${escapeHtml(patchLabel.toUpperCase())}</span>
+          </td>
+          <td>
+            <div style="font-family:var(--font-mono); font-weight:700; font-size:0.85rem; color:var(--accent-cyan); cursor:pointer;" class="btn-jump-order" data-order="${rec.orderCode}">
+              ${escapeHtml(rec.orderCode)}
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">${escapeHtml(rec.customerName)}</div>
+          </td>
+          <td style="text-align:center;">
+            <select class="form-control select-factory-status ${isOrdered ? 'status-si' : 'status-no'}" 
+              data-order="${rec.orderCode}" data-idx="${rec.itemIndex}">
+              <option value="NO" ${!isOrdered ? 'selected' : ''}>⏳ NO (Pendiente)</option>
+              <option value="SI" ${isOrdered ? 'selected' : ''}>✅ SÍ (Pedido)</option>
+            </select>
+          </td>
+          <td style="text-align:right;">
+            <button type="button" class="action-icon-btn btn-jump-order" data-order="${rec.orderCode}" title="Ver pedido completo">
+              🔍
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Eventos de checkboxes individuales
+    allGarmentsTbody.querySelectorAll('.garment-row-check').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const key = chk.dataset.key;
+        if (chk.checked) selectedGarmentKeys.add(key);
+        else selectedGarmentKeys.delete(key);
+        updateGarmentsSelectionUI(garments);
+      });
+    });
+
+    // Evento para cambiar si está pedido o no a fábrica en cada prenda individual
+    allGarmentsTbody.querySelectorAll('.select-factory-status').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const orderCode = sel.dataset.order;
+        const itemIdx = parseInt(sel.dataset.idx, 10);
+        const newStatus = sel.value; // 'SI' o 'NO'
+
+        sel.disabled = true;
+        try {
+          const order = allOrders.find(o => o.orderCode === orderCode);
+          if (order && order.items && order.items[itemIdx]) {
+            order.items[itemIdx].orderedToFactory = newStatus;
+            await window.dbService.updateOrder(orderCode, { items: order.items });
+            sel.className = `form-control select-factory-status ${newStatus === 'SI' ? 'status-si' : 'status-no'}`;
+            showToast(`✓ Prenda marcada como ${newStatus === 'SI' ? 'PEDIDA A FÁBRICA' : 'PENDIENTE'}`, 'success');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Error al actualizar estado de la prenda: ' + err.message, 'error');
+        } finally {
+          sel.disabled = false;
+        }
+      });
+    });
+
+    // Salto rápido al modal de detalle del pedido
+    allGarmentsTbody.querySelectorAll('.btn-jump-order').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const orderCode = btn.dataset.order;
+        const targetOrder = allOrders.find(o => o.orderCode === orderCode);
+        if (targetOrder) openOrderDetail(targetOrder);
+      });
+    });
+  }
+
+  function updateGarmentsSelectionUI(currentFilteredGarments) {
+    const count = selectedGarmentKeys.size;
+    if (garmentsSelectedCountLabel) {
+      garmentsSelectedCountLabel.textContent = `${count} seleccionada${count === 1 ? '' : 's'}`;
+    }
+    if (btnSupplierCount) {
+      btnSupplierCount.textContent = count;
+    }
+    if (checkSelectAllGarments) {
+      if (!currentFilteredGarments || currentFilteredGarments.length === 0) {
+        checkSelectAllGarments.checked = false;
+      } else {
+        const allVisibleSelected = currentFilteredGarments.every(rec => selectedGarmentKeys.has(rec.key));
+        checkSelectAllGarments.checked = allVisibleSelected;
+      }
+    }
+  }
+
+  // Checkbox Seleccionar Todas
+  if (checkSelectAllGarments) {
+    checkSelectAllGarments.addEventListener('change', () => {
+      const isChecked = checkSelectAllGarments.checked;
+      allGarmentsData.forEach(rec => {
+        const isOrdered = (rec.item.orderedToFactory || 'NO').toUpperCase() === 'SI';
+        let visible = true;
+        if (garmentFactoryFilter === 'NO' && isOrdered) visible = false;
+        if (garmentFactoryFilter === 'SI' && !isOrdered) visible = false;
+        if (garmentSearchQuery) {
+          const q = garmentSearchQuery.toLowerCase();
+          const matchCode = (rec.orderCode || '').toLowerCase().includes(q);
+          const matchCustomer = (rec.customerName || '').toLowerCase().includes(q);
+          const matchName = (rec.item.customName || '').toLowerCase().includes(q);
+          const matchNum = (rec.item.customNumber || '').toLowerCase().includes(q);
+          const matchSize = (rec.item.size || '').toLowerCase().includes(q);
+          const matchPatch = (rec.item.patchDetails || rec.item.patch || '').toLowerCase().includes(q);
+          if (!(matchCode || matchCustomer || matchName || matchNum || matchSize || matchPatch)) visible = false;
+        }
+
+        if (visible) {
+          if (isChecked) selectedGarmentKeys.add(rec.key);
+          else selectedGarmentKeys.delete(rec.key);
+        }
+      });
+      renderAllGarmentsView();
+    });
+  }
+
+  // Buscador de prendas
+  if (adminGarmentsSearchInput) {
+    adminGarmentsSearchInput.addEventListener('input', (e) => {
+      garmentSearchQuery = e.target.value.trim();
+      renderAllGarmentsView();
+    });
+  }
+
+  // Filtro de Fábrica (Todas / NO / SÍ)
+  if (garmentsFactoryFilterTabs) {
+    garmentsFactoryFilterTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        garmentsFactoryFilterTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        garmentFactoryFilter = tab.dataset.factoryFilter;
+        renderAllGarmentsView();
+      });
+    });
+  }
+
+  // Marcar seleccionadas en lote como Pedido: SÍ
+  if (btnBatchMarkOrderedSi) {
+    btnBatchMarkOrderedSi.addEventListener('click', async () => {
+      if (selectedGarmentKeys.size === 0) {
+        showToast('Selecciona al menos una prenda para marcar', 'warning');
+        return;
+      }
+      await batchUpdateGarmentsFactoryStatus('SI');
+    });
+  }
+
+  // Marcar seleccionadas en lote como Pedido: NO
+  if (btnBatchMarkOrderedNo) {
+    btnBatchMarkOrderedNo.addEventListener('click', async () => {
+      if (selectedGarmentKeys.size === 0) {
+        showToast('Selecciona al menos una prenda para marcar', 'warning');
+        return;
+      }
+      await batchUpdateGarmentsFactoryStatus('NO');
+    });
+  }
+
+  async function batchUpdateGarmentsFactoryStatus(newStatus) {
+    const ordersToUpdate = new Map();
+
+    allGarmentsData.forEach(rec => {
+      if (selectedGarmentKeys.has(rec.key)) {
+        if (!ordersToUpdate.has(rec.orderCode)) {
+          ordersToUpdate.set(rec.orderCode, []);
+        }
+        ordersToUpdate.get(rec.orderCode).push(rec.itemIndex);
+      }
+    });
+
+    try {
+      for (const [orderCode, indices] of ordersToUpdate.entries()) {
+        const order = allOrders.find(o => o.orderCode === orderCode);
+        if (order && order.items) {
+          indices.forEach(idx => {
+            if (order.items[idx]) order.items[idx].orderedToFactory = newStatus;
+          });
+          await window.dbService.updateOrder(orderCode, { items: order.items });
+        }
+      }
+      showToast(`✓ ${selectedGarmentKeys.size} prendas marcadas como Pedido: ${newStatus}`, 'success');
+      renderAllGarmentsView();
+    } catch (err) {
+      console.error(err);
+      showToast('Error al actualizar prendas en lote: ' + err.message, 'error');
+    }
+  }
+
+  /* ==========================================================================
+     HOJA DE PROVEEDOR / TALLER (DISEÑO IDÉNTICO A LA FOTO DEL USUARIO)
+     FOTO CENTRADA ARRIBA + TABLA VERDE ABAJO CON VERSION, SIZE, NAME+NUM, PATCH
+     ========================================================================== */
+  function renderSupplierSheet(items, { title, code, date } = {}) {
+    if (workshopModalTitle) workshopModalTitle.textContent = title || 'Ficha para Fábrica & Proveedor Textil';
+    if (supplierOrderCodeText) supplierOrderCodeText.textContent = code ? `#${code}` : '';
+    if (supplierSheetDate) supplierSheetDate.textContent = date || new Date().toLocaleDateString('es-ES');
+    if (supplierSheetTotalCount) supplierSheetTotalCount.textContent = `${items.length} ${items.length === 1 ? 'prenda' : 'prendas'}`;
+
+    if (!supplierBlocksContainer) return;
+    supplierBlocksContainer.innerHTML = '';
+
+    if (!items || items.length === 0) {
+      supplierBlocksContainer.innerHTML = `<div style="text-align:center; padding:3rem; color:#64748b;">No hay prendas para mostrar en este documento.</div>`;
+      return;
+    }
+
+    // Agrupar prendas por foto de camiseta (o modelo)
+    // Para que las prendas de un mismo modelo compartan foto y tabla
+    const groups = new Map();
+    items.forEach((item, idx) => {
+      const imgKey = item.imageUrl || `no_img_${idx}`;
+      if (!groups.has(imgKey)) {
+        groups.set(imgKey, { imageUrl: item.imageUrl, items: [] });
+      }
+      groups.get(imgKey).items.push(item);
+    });
+
+    groups.forEach((group) => {
+      const block = document.createElement('div');
+      block.className = 'supplier-garment-block';
+
+      const imgHtml = group.imageUrl
+        ? `<div class="supplier-photo-container">
+             <img src="${group.imageUrl}" alt="Camiseta" class="supplier-sheet-photo" onerror="this.src='assets/sample-jersey.jpg'">
+           </div>`
+        : `<div class="supplier-photo-container">
+             <img src="assets/sample-jersey.jpg" alt="Camiseta" class="supplier-sheet-photo">
+           </div>`;
+
+      let rowsHtml = '';
+      group.items.forEach(it => {
+        const rawVer = (it.version || 'Fan').toLowerCase();
+        const version = rawVer.charAt(0).toUpperCase() + rawVer.slice(1);
+        const size = (it.size || 'M').toUpperCase();
+
+        // NAME + NUMBER: si no tiene nombre ni número, se deja en blanco exactamente como en la foto
+        const name = (it.customName || '').trim().toUpperCase();
+        const num = (it.customNumber || '').trim();
+        let nameAndNumber = '';
+        if (name && num) nameAndNumber = `${name} ${num}`;
+        else if (name) nameAndNumber = name;
+        else if (num) nameAndNumber = num;
+
+        // PATCH: si es YES, se pone el texto del recuadro escrito. Si es NO, celda vacía exactamente como en la foto
+        let patchText = '';
+        if (it.patch && it.patch !== 'NO') {
+          patchText = it.patchDetails || (it.patch !== 'YES' ? it.patch : '');
+        }
+
+        rowsHtml += `
+          <tr>
+            <td>${escapeHtml(version)}</td>
+            <td style="font-weight:700;">${escapeHtml(size)}</td>
+            <td style="font-weight:600;">${escapeHtml(nameAndNumber)}</td>
+            <td style="font-weight:600;">${escapeHtml(patchText.toUpperCase())}</td>
+          </tr>
+        `;
+      });
+
+      block.innerHTML = `
+        ${imgHtml}
+        <table class="supplier-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">VERSION</th>
+              <th style="width: 20%;">SIZE</th>
+              <th style="width: 35%;">NAME + NUMBER</th>
+              <th style="width: 20%;">PATCH</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+
+      supplierBlocksContainer.appendChild(block);
+    });
+  }
+
+  // Ficha de Taller de un pedido individual
   function openWorkshopSheet(order) {
     if (!order) return;
     activeOrder = order;
-
-    const codeEl = document.getElementById('workshop-order-code');
-    const dateEl = document.getElementById('workshop-order-date');
-    const nameEl = document.getElementById('workshop-customer-name');
-    const phoneEl = document.getElementById('workshop-customer-phone');
-    const countEl = document.getElementById('workshop-items-count');
-
-    if (codeEl) codeEl.textContent = order.orderCode;
-    if (dateEl) {
-      dateEl.textContent = order.createdAt 
-        ? new Date(order.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-        : new Date().toLocaleDateString('es-ES');
-    }
-    if (nameEl) nameEl.textContent = order.customerName || `${order.firstName || ''} ${order.lastName || ''}`.trim() || 'Cliente';
-    if (phoneEl) phoneEl.textContent = order.phone || 'Sin teléfono';
+    activeExportFilename = `Ficha_Taller_${order.orderCode}.pdf`;
 
     const items = order.items || [];
-    if (countEl) countEl.textContent = `${items.length} ${items.length === 1 ? 'PRENDA' : 'PRENDAS'}`;
+    const dateFormatted = order.createdAt 
+      ? new Date(order.createdAt).toLocaleDateString('es-ES')
+      : new Date().toLocaleDateString('es-ES');
 
-    // Observaciones o notas especiales
-    const notesBanner = document.getElementById('workshop-notes-banner');
-    const notesText = document.getElementById('workshop-notes-text');
-    if (order.notes && order.notes.trim()) {
-      if (notesText) notesText.textContent = order.notes.trim();
-      if (notesBanner) notesBanner.style.display = 'block';
-    } else {
-      if (notesBanner) notesBanner.style.display = 'none';
-    }
-
-    // Fichas individuales de confección con fotos grandes y dorsales claros
-    const container = document.getElementById('workshop-cards-container');
-    if (container) {
-      container.innerHTML = '';
-
-      if (items.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:2rem; color:#64748b;">No hay prendas en este pedido para confeccionar.</div>`;
-      } else {
-        items.forEach((item, idx) => {
-          const card = document.createElement('div');
-          card.className = 'workshop-card';
-
-          const patchStr = item.patch && item.patch !== 'NO' ? `<span style="color:#c2410c; margin-left:8px; font-weight:800;">★ PARCHE: ${escapeHtml(item.patch.toUpperCase())}</span>` : '';
-
-          card.innerHTML = `
-            <div class="workshop-card-top">
-              <div class="workshop-garment-title">
-                <span>👕 PRENDA #${idx + 1}</span>
-                <span style="font-weight:600; font-size:13px; color:#475569;">&bull; Versión: <strong style="color:#0f172a;">${escapeHtml(item.version || 'FAN')}</strong></span>
-                ${patchStr}
-              </div>
-              <div class="workshop-size-badge-large">
-                TALLA: ${(escapeHtml(item.size || 'M')).toUpperCase()}
-              </div>
-            </div>
-
-            <div class="workshop-card-body">
-              <div>
-                <img src="${item.imageUrl || 'assets/jersey-preview.jpg'}" alt="Prenda #${idx + 1}" class="workshop-img-large" onerror="this.src='assets/jersey-preview.jpg'">
-              </div>
-
-              <div class="workshop-custom-box">
-                <div class="workshop-custom-label">Personalización Trasera / Dorsal:</div>
-                <div class="workshop-name-text">
-                  ${item.customName ? escapeHtml(item.customName.toUpperCase()) : '<span style="color:#94a3b8; font-size:15px; font-weight:600;">(SIN NOMBRE)</span>'}
-                </div>
-                <div class="workshop-num-text">
-                  ${item.customNumber ? '#' + escapeHtml(item.customNumber) : '<span style="color:#94a3b8; font-size:18px; font-weight:600;">(SIN DORSAL)</span>'}
-                </div>
-                <div style="margin-top:8px; font-size:12px; color:#475569;">
-                  Talla: <strong style="color:#0f172a; font-size:13px;">${escapeHtml(item.size || 'M')}</strong> | Versión: <strong>${escapeHtml(item.version || 'FAN')}</strong>
-                </div>
-              </div>
-
-              <div class="workshop-checklist">
-                <div class="workshop-check-item">
-                  <span class="workshop-square"></span>
-                  <span>Prenda base verificada</span>
-                </div>
-                <div class="workshop-check-item">
-                  <span class="workshop-square"></span>
-                  <span>Vinilo / Estampado OK</span>
-                </div>
-                <div class="workshop-check-item">
-                  <span class="workshop-square"></span>
-                  <span>Planchado & fijación</span>
-                </div>
-                <div class="workshop-check-item">
-                  <span class="workshop-square"></span>
-                  <span>Control de calidad final</span>
-                </div>
-              </div>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-      }
-    }
+    renderSupplierSheet(items, {
+      title: 'Ficha de Producción & Taller',
+      code: order.orderCode,
+      date: dateFormatted
+    });
 
     if (modalWorkshopSheet) modalWorkshopSheet.classList.add('active');
+  }
+
+  // Exportar PDF para Proveedor con selección de prendas de varios pedidos
+  if (btnExportSupplierPdf) {
+    btnExportSupplierPdf.addEventListener('click', () => {
+      if (selectedGarmentKeys.size === 0) {
+        showToast('⚠️ Por favor selecciona al menos una prenda para exportar al proveedor', 'warning');
+        return;
+      }
+
+      const selectedItems = [];
+      allGarmentsData.forEach(rec => {
+        if (selectedGarmentKeys.has(rec.key)) {
+          selectedItems.push({
+            ...rec.item,
+            orderCode: rec.orderCode,
+            customerName: rec.customerName
+          });
+        }
+      });
+
+      const todayStr = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+      activeExportFilename = `Pedido_Proveedor_Lote_${todayStr}.pdf`;
+
+      renderSupplierSheet(selectedItems, {
+        title: `Hoja de Pedido a Fábrica (${selectedItems.length} Prendas)`,
+        code: `LOTE-${todayStr}`,
+        date: new Date().toLocaleDateString('es-ES')
+      });
+
+      if (modalWorkshopSheet) modalWorkshopSheet.classList.add('active');
+    });
   }
 
   // Impresión nativa limpia A4 de la Ficha de Taller
@@ -1024,9 +1430,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Guardar Ficha de Taller como PDF
   if (btnWorkshopDownloadPdf) {
     btnWorkshopDownloadPdf.addEventListener('click', async () => {
-      if (!activeOrder) return;
       const sheet = document.getElementById('printable-workshop-sheet');
       if (!sheet) return;
+
+      const pdfFilename = activeExportFilename || (activeOrder ? `Ficha_Taller_${activeOrder.orderCode}.pdf` : `Pedido_Proveedor_${Date.now()}.pdf`);
 
       btnWorkshopDownloadPdf.disabled = true;
       btnWorkshopDownloadPdf.innerHTML = `<div class="spinner"></div> Guardando PDF...`;
@@ -1035,19 +1442,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof html2pdf !== 'undefined') {
           const opt = {
             margin: [8, 8, 8, 8],
-            filename: `Ficha_Taller_${activeOrder.orderCode}.pdf`,
+            filename: pdfFilename,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
           };
           await html2pdf().set(opt).from(sheet).save();
-          showToast('📥 Ficha de taller guardada como PDF', 'success');
+          showToast('📥 Documento guardado como PDF', 'success');
         } else {
           printNativeDocument('workshop');
         }
       } catch (err) {
         console.error('Error generando PDF taller:', err);
-        showToast('Error al exportar PDF de taller: ' + err.message, 'error');
+        showToast('Error al exportar PDF: ' + err.message, 'error');
       } finally {
         btnWorkshopDownloadPdf.disabled = false;
         btnWorkshopDownloadPdf.innerHTML = `📥 Guardar PDF`;

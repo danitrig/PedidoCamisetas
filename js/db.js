@@ -151,6 +151,8 @@ class DatabaseService {
         customName: item.customName || '',
         customNumber: item.customNumber || '',
         patch: item.patch || 'NO',
+        patchDetails: item.patchDetails || (item.patch && item.patch !== 'NO' && item.patch !== 'YES' ? item.patch : ''),
+        orderedToFactory: item.orderedToFactory || 'NO',
         salePrice: parseFloat(item.salePrice) || 0,
         costPrice: parseFloat(item.costPrice) || 0,
         imageUrl: imageUrl,

@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     itemCounter: 0
   };
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   // Elementos DOM
   const form = document.getElementById('order-form');
   const itemsContainer = document.getElementById('garments-container');
@@ -57,6 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
       size: initialData?.size || 'M',
       customName: initialData?.customName || '',
       customNumber: initialData?.customNumber || '',
+      patch: initialData?.patch || 'NO',
+      patchDetails: initialData?.patchDetails || '',
+      orderedToFactory: 'NO',
       notes: initialData?.notes || '',
       imageFile: initialData?.imageFile || null,
       imagePreviewUrl: initialData?.imagePreviewUrl || ''
@@ -147,6 +155,36 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
+      <!-- PARCHE DEPORTIVO (LIGA / CHAMPIONS / ETC) -->
+      <div class="garment-patch-section" style="margin-top: 1rem; margin-bottom: 1rem; padding: 0.9rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <label class="form-label" style="margin-bottom: 0.15rem; font-weight: 700; color: #fff; font-size: 0.88rem;">
+              🏅 Parche de Competición
+            </label>
+            <div style="font-size: 0.78rem; color: var(--text-secondary);">¿Lleva parche en la manga? (Champions, LaLiga, etc.)</div>
+          </div>
+          <div class="patch-btn-group" id="patch-group-${garment.id}" style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-sm btn-patch-choice ${garment.patch && garment.patch !== 'NO' ? 'btn-secondary' : 'btn-primary'}" data-choice="NO" data-id="${garment.id}">
+              NO
+            </button>
+            <button type="button" class="btn btn-sm btn-patch-choice ${garment.patch && garment.patch !== 'NO' ? 'btn-primary active' : 'btn-secondary'}" data-choice="YES" data-id="${garment.id}" style="${garment.patch && garment.patch !== 'NO' ? 'background: var(--accent-amber); border-color: var(--accent-amber); color: #000; font-weight: 700;' : ''}">
+              SÍ / YES
+            </button>
+          </div>
+        </div>
+
+        <div class="patch-details-wrapper" id="patch-details-wrap-${garment.id}" style="${garment.patch && garment.patch !== 'NO' ? 'display: block; margin-top: 0.75rem;' : 'display: none; margin-top: 0.75rem;'}">
+          <label class="form-label" style="color: var(--accent-amber); font-size: 0.82rem; font-weight: 700; margin-bottom: 0.25rem;">
+            ¿Qué parche quieres? <span class="req">*</span>
+          </label>
+          <input type="text" class="form-control input-garment-patch-desc" id="patch-desc-${garment.id}" data-id="${garment.id}" 
+            placeholder="Ej: Champions League, LaLiga EA Sports, Mundial de Clubes..." 
+            value="${escapeHtml(garment.patchDetails || (garment.patch && garment.patch !== 'NO' && garment.patch !== 'YES' ? garment.patch : ''))}">
+          <small style="color: var(--text-muted); font-size: 0.74rem;">Escribe exactamente el parche o competición deseada.</small>
+        </div>
+      </div>
+
       <!-- PREVISUALIZACIÓN EN VIVO ESTILO DORSAL DEPORTIVO -->
       <div class="custom-preview-badge" id="badge-preview-${garment.id}">
         <div class="preview-badge-label">Previsualización de estampado:</div>
@@ -208,6 +246,50 @@ document.addEventListener('DOMContentLoaded', () => {
       garment.customNumber = val;
       prevNum.textContent = val || '00';
     });
+
+    // Gestión de Parche (NO / YES con campo de texto desplegable)
+    card.querySelectorAll(`.btn-patch-choice`).forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = btn.dataset.choice;
+        const detailsWrap = document.getElementById(`patch-details-wrap-${itemId}`);
+        const descInput = document.getElementById(`patch-desc-${itemId}`);
+
+        card.querySelectorAll(`.btn-patch-choice`).forEach(b => {
+          b.classList.remove('active', 'btn-primary');
+          b.classList.add('btn-secondary');
+          b.style.background = '';
+          b.style.borderColor = '';
+          b.style.color = '';
+        });
+
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('active', 'btn-primary');
+
+        if (choice === 'YES') {
+          btn.style.background = 'var(--accent-amber)';
+          btn.style.borderColor = 'var(--accent-amber)';
+          btn.style.color = '#000';
+          detailsWrap.style.display = 'block';
+          garment.patch = (descInput && descInput.value.trim()) ? descInput.value.trim() : 'YES';
+          garment.patchDetails = descInput ? descInput.value.trim() : '';
+          if (descInput) setTimeout(() => descInput.focus(), 60);
+        } else {
+          detailsWrap.style.display = 'none';
+          garment.patch = 'NO';
+          garment.patchDetails = '';
+          if (descInput) descInput.value = '';
+        }
+      });
+    });
+
+    const descInput = document.getElementById(`patch-desc-${itemId}`);
+    if (descInput) {
+      descInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        garment.patchDetails = val;
+        garment.patch = val.trim() ? val.trim() : 'YES';
+      });
+    }
 
     // Subida de Imagen por Clic
     dropzone.addEventListener('click', (e) => {
@@ -412,7 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
           size: item.size,
           customName: item.customName,
           customNumber: item.customNumber,
-          patch: item.patch || 'NO',
+          patch: item.patch === 'NO' ? 'NO' : (item.patchDetails || item.patch || 'YES'),
+          patchDetails: item.patch === 'NO' ? '' : (item.patchDetails || item.patch || ''),
+          orderedToFactory: 'NO',
           salePrice: item.salePrice || 15.00,
           costPrice: item.costPrice || 10.00,
           imageFile: item.imageFile,

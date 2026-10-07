@@ -246,95 +246,175 @@
         </div>
       </div>
 
-      <!-- Métricas / KPIs -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(0, 242, 254, 0.12); color: var(--accent-cyan);">📦</div>
-          <div>
-            <div class="kpi-value" id="kpi-total-orders">0</div>
-            <div class="kpi-label">Total Pedidos</div>
+      <!-- Selector de Subpestañas Principales de Administrador -->
+      <div class="admin-main-nav-tabs">
+        <button type="button" class="admin-nav-tab-btn active" id="tab-nav-orders">
+          <span style="font-size: 1.15rem;">📋</span>
+          <span>Gestión de Pedidos</span>
+          <span class="tab-badge" id="badge-count-orders">0</span>
+        </button>
+        <button type="button" class="admin-nav-tab-btn" id="tab-nav-garments">
+          <span style="font-size: 1.15rem;">👕</span>
+          <span>Todas las Prendas (Proveedor)</span>
+          <span class="tab-badge" id="badge-count-garments">0</span>
+        </button>
+      </div>
+
+      <!-- ================= PESTAÑA 1: LISTADO DE PEDIDOS ================= -->
+      <div id="admin-view-orders-tab">
+        <!-- Métricas / KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(0, 242, 254, 0.12); color: var(--accent-cyan);">📦</div>
+            <div>
+              <div class="kpi-value" id="kpi-total-orders">0</div>
+              <div class="kpi-label">Total Pedidos</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.12); color: var(--accent-amber);">⏳</div>
+            <div>
+              <div class="kpi-value" id="kpi-pending-orders">0</div>
+              <div class="kpi-label">Pendientes</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🛒</div>
+            <div>
+              <div class="kpi-value" id="kpi-ordered-orders" style="color: #38bdf8;">0</div>
+              <div class="kpi-label">Pedidos</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">💳</div>
+            <div>
+              <div class="kpi-value" id="kpi-paid-orders" style="color: #34d399;">0</div>
+              <div class="kpi-label">Pagados</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.12); color: var(--accent-purple);">🚚</div>
+            <div>
+              <div class="kpi-value" id="kpi-shipped-orders">0</div>
+              <div class="kpi-label">Enviados</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(14, 165, 233, 0.15); color: #7dd3fc;">📦</div>
+            <div>
+              <div class="kpi-value" id="kpi-received-orders" style="color: #7dd3fc;">0</div>
+              <div class="kpi-label">Recibidos</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7;">✅</div>
+            <div>
+              <div class="kpi-value" id="kpi-delivered-orders" style="color: #6ee7b7;">0</div>
+              <div class="kpi-label">Entregados</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--accent-emerald);">👕</div>
+            <div>
+              <div class="kpi-value" id="kpi-total-garments">0</div>
+              <div class="kpi-label">Total Prendas</div>
+            </div>
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.12); color: var(--accent-amber);">⏳</div>
-          <div>
-            <div class="kpi-value" id="kpi-pending-orders">0</div>
-            <div class="kpi-label">Pendientes</div>
+        <!-- Barra de Filtros y Búsqueda -->
+        <div class="filter-search-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon-inside">🔍</span>
+            <input type="text" id="admin-search-input" class="form-control"
+              placeholder="Buscar por cliente, teléfono, código o seguimiento...">
+          </div>
+
+          <div class="status-tabs">
+            <button type="button" class="tab-btn active" data-filter="all">Todos</button>
+            <button type="button" class="tab-btn" data-filter="pendiente">⏳ Pendientes</button>
+            <button type="button" class="tab-btn" data-filter="pedido">🛒 Pedidos</button>
+            <button type="button" class="tab-btn" data-filter="pagado">💳 Pagados</button>
+            <button type="button" class="tab-btn" data-filter="enviado">🚚 Enviados</button>
+            <button type="button" class="tab-btn" data-filter="recibido">📦 Recibidos</button>
+            <button type="button" class="tab-btn" data-filter="entregado">✅ Entregados</button>
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🛒</div>
-          <div>
-            <div class="kpi-value" id="kpi-ordered-orders" style="color: #38bdf8;">0</div>
-            <div class="kpi-label">Pedidos</div>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">💳</div>
-          <div>
-            <div class="kpi-value" id="kpi-paid-orders" style="color: #34d399;">0</div>
-            <div class="kpi-label">Pagados</div>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.12); color: var(--accent-purple);">🚚</div>
-          <div>
-            <div class="kpi-value" id="kpi-shipped-orders">0</div>
-            <div class="kpi-label">Enviados</div>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(14, 165, 233, 0.15); color: #7dd3fc;">📦</div>
-          <div>
-            <div class="kpi-value" id="kpi-received-orders" style="color: #7dd3fc;">0</div>
-            <div class="kpi-label">Recibidos</div>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7;">✅</div>
-          <div>
-            <div class="kpi-value" id="kpi-delivered-orders" style="color: #6ee7b7;">0</div>
-            <div class="kpi-label">Entregados</div>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--accent-emerald);">👕</div>
-          <div>
-            <div class="kpi-value" id="kpi-total-garments">0</div>
-            <div class="kpi-label">Total Prendas</div>
-          </div>
+        <!-- Listado de Pedidos -->
+        <div class="orders-list" id="admin-orders-list">
+          <!-- Renderizado dinámico -->
         </div>
       </div>
 
-      <!-- Barra de Filtros y Búsqueda -->
-      <div class="filter-search-bar">
-        <div class="search-input-wrap">
-          <span class="search-icon-inside">🔍</span>
-          <input type="text" id="admin-search-input" class="form-control"
-            placeholder="Buscar por cliente, teléfono, código o seguimiento...">
+      <!-- ================= PESTAÑA 2: TODAS LAS PRENDAS (PROVEEDOR) ================= -->
+      <div id="admin-view-garments-tab" style="display: none;">
+        <!-- Barra de Filtro y Búsqueda de Prendas -->
+        <div class="filter-search-bar" style="margin-bottom: 1rem;">
+          <div class="search-input-wrap">
+            <span class="search-icon-inside">🔍</span>
+            <input type="text" id="admin-garments-search-input" class="form-control"
+              placeholder="Buscar prenda por cliente, código pedido, nombre dorsal, talla, parche...">
+          </div>
+
+          <div class="status-tabs" id="garments-factory-filter-tabs">
+            <button type="button" class="tab-btn active" data-factory-filter="all">Todas</button>
+            <button type="button" class="tab-btn" data-factory-filter="NO">⏳ Pendiente Fábrica</button>
+            <button type="button" class="tab-btn" data-factory-filter="SI">✅ Ya Pedidas</button>
+          </div>
         </div>
 
-        <div class="status-tabs">
-          <button type="button" class="tab-btn active" data-filter="all">Todos</button>
-          <button type="button" class="tab-btn" data-filter="pendiente">⏳ Pendientes</button>
-          <button type="button" class="tab-btn" data-filter="pedido">🛒 Pedidos</button>
-          <button type="button" class="tab-btn" data-filter="pagado">💳 Pagados</button>
-          <button type="button" class="tab-btn" data-filter="enviado">🚚 Enviados</button>
-          <button type="button" class="tab-btn" data-filter="recibido">📦 Recibidos</button>
-          <button type="button" class="tab-btn" data-filter="entregado">✅ Entregados</button>
-        </div>
-      </div>
+        <!-- Barra de Acciones por Lote / Selección -->
+        <div class="garments-batch-bar">
+          <div class="garments-batch-left">
+            <label class="batch-check-label">
+              <input type="checkbox" id="check-select-all-garments">
+              <span>Seleccionar todas</span>
+            </label>
+            <span class="batch-count-text" id="garments-selected-count-label">0 seleccionadas</span>
+          </div>
 
-      <!-- Listado de Pedidos -->
-      <div class="orders-list" id="admin-orders-list">
-        <!-- Renderizado dinámico -->
+          <div class="garments-batch-actions">
+            <button type="button" class="btn btn-sm btn-supplier-export" id="btn-export-supplier-pdf">
+              📥 Exportar PDF Proveedor (<span id="btn-supplier-count">0</span>)
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-batch-mark-ordered-si" title="Marcar seleccionadas como Pedido a fábrica: SÍ">
+              ✅ Marcar Pedido: SÍ
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-batch-mark-ordered-no" title="Marcar seleccionadas como Pedido a fábrica: NO">
+              ⏳ Marcar Pedido: NO
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla Global de Prendas -->
+        <div class="table-responsive-box">
+          <table class="data-table" id="table-all-garments">
+            <thead>
+              <tr>
+                <th style="width: 44px; text-align: center;">Sel.</th>
+                <th style="width: 70px;">Foto</th>
+                <th>Prenda / Versión</th>
+                <th style="width: 80px;">Talla</th>
+                <th>Nombre + Número</th>
+                <th>Parche</th>
+                <th>Pedido / Cliente</th>
+                <th style="text-align: center; width: 170px;">¿Pedido a Fábrica?</th>
+                <th style="text-align: right; width: 70px;">Ver</th>
+              </tr>
+            </thead>
+            <tbody id="all-garments-tbody">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -765,12 +845,10 @@
 
         <div class="grid-3">
           <div class="form-group">
-            <label class="form-label" for="edit-item-patch">Parche</label>
+            <label class="form-label" for="edit-item-patch">¿Lleva Parche?</label>
             <select id="edit-item-patch" class="form-control" style="font-weight: 700;">
-              <option value="YES">YES</option>
               <option value="NO">NO</option>
-              <option value="LIGA">LIGA</option>
-              <option value="CHAMPIONS">CHAMPIONS</option>
+              <option value="YES">SÍ / YES</option>
             </select>
           </div>
 
@@ -793,6 +871,15 @@
               style="font-weight: 700; color: #38bdf8;">
             <small style="color: var(--text-muted); font-size: 0.72rem;">Lo que pagas a fábrica</small>
           </div>
+        </div>
+
+        <!-- Campo dinámico: Nombre del parche cuando está en YES -->
+        <div class="form-group" id="edit-item-patch-desc-wrap" style="display: none; background: rgba(245,158,11,0.06); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid rgba(245,158,11,0.2);">
+          <label class="form-label" for="edit-item-patch-desc" style="color: var(--accent-amber); font-weight: 700;">
+            ¿Qué parche queremos? <span class="req">*</span>
+          </label>
+          <input type="text" id="edit-item-patch-desc" class="form-control" placeholder="Ej: Champions League, LaLiga, Mundial de Clubes...">
+          <small style="color: var(--text-muted); font-size: 0.74rem;">Este texto aparecerá en la columna PATCH de la ficha de taller y proveedor.</small>
         </div>
 
         <!-- Imagen de la prenda -->
@@ -928,7 +1015,7 @@
   </div>
 
   <!-- ========================================================================
-       MODAL 10: FICHA DE TALLER & PRODUCCIÓN (PROFESIONAL PARA OPERARIOS)
+       MODAL 10: FICHA DE TALLER & HOJA DE PROVEEDOR (DISEÑO LIMPIO SEGÚN FOTO)
        ======================================================================== -->
   <div class="modal-overlay" id="modal-workshop-sheet">
     <div class="doc-modal-box">
@@ -936,16 +1023,16 @@
       <div class="doc-top-bar">
         <div class="doc-top-bar-title">
           <span>🏭</span>
-          <span>Ficha de Fabricación & Taller Textil</span>
+          <span id="workshop-modal-title">Ficha para Fábrica & Proveedor Textil</span>
         </div>
 
         <div class="doc-top-bar-actions">
           <button type="button" class="btn btn-sm btn-primary" id="btn-workshop-print-native"
-            title="Imprimir ficha para los operarios del taller">
-            🖨️ Imprimir Ficha A4
+            title="Imprimir ficha A4">
+            🖨️ Imprimir A4
           </button>
           <button type="button" class="btn btn-sm btn-secondary" id="btn-workshop-download-pdf"
-            title="Guardar como PDF de producción">
+            title="Guardar como archivo PDF">
             📥 Guardar PDF
           </button>
           <button type="button" class="btn btn-sm btn-outline-danger btn-modal-close" style="padding: 0.35rem 0.75rem;">
@@ -956,57 +1043,21 @@
 
       <!-- Scroll del documento visual -->
       <div class="doc-scroll-viewport">
-        <div id="printable-workshop-sheet" class="paper-sheet">
-          <div class="workshop-header">
-            <div class="workshop-title-badge">
-              <span>🏭</span>
-              <span>ORDEN DE PRODUCCIÓN & ESTAMPACIÓN</span>
+        <div id="printable-workshop-sheet" class="paper-sheet supplier-pdf-paper">
+          <!-- Encabezado simple y discreto -->
+          <div class="supplier-header-bar" id="supplier-header-bar">
+            <div>
+              <span class="supplier-badge-tag">HOJA DE PEDIDO A FÁBRICA</span>
+              <span id="supplier-order-code-text" style="font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; color: #0f172a; margin-left: 0.5rem;"></span>
             </div>
-            <div style="text-align: right;">
-              <span style="font-family:'JetBrains Mono', monospace; font-size:22px; font-weight:900; color:#0f172a;"
-                id="workshop-order-code">PED-000000</span>
-              <div style="font-size:12px; color:#64748b;" id="workshop-order-date">07/10/2026</div>
-            </div>
-          </div>
-
-          <!-- Cuadrícula de Datos de Taller -->
-          <div class="workshop-meta-grid">
-            <div class="workshop-meta-item">
-              <div class="meta-lbl">Cliente</div>
-              <div class="meta-val" id="workshop-customer-name">-</div>
-            </div>
-            <div class="workshop-meta-item">
-              <div class="meta-lbl">Contacto / Teléfono</div>
-              <div class="meta-val" id="workshop-customer-phone">-</div>
-            </div>
-            <div class="workshop-meta-item">
-              <div class="meta-lbl">Total Prendas a Fabricar</div>
-              <div class="meta-val" style="color:#0284c7;" id="workshop-items-count">-</div>
+            <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">
+              <span id="supplier-sheet-date"></span> &bull; <span id="supplier-sheet-total-count">0 prendas</span>
             </div>
           </div>
 
-          <!-- Notas para el taller si existen -->
-          <div id="workshop-notes-banner"
-            style="display:none; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:10px 14px; margin-bottom:18px; font-size:13px; color:#92400e;">
-            <strong>⚠️ Observaciones de entrega/confección:</strong> <span id="workshop-notes-text"></span>
-          </div>
-
-          <!-- Tarjetas individuales de confección con fotos grandes y dorsales claros -->
-          <div id="workshop-cards-container">
+          <!-- Contenido de las prendas: Foto grande centrada + tabla verde idéntica a la imagen -->
+          <div id="supplier-blocks-container">
             <!-- Renderizado dinámico -->
-          </div>
-
-          <!-- Pie de control de calidad -->
-          <div class="workshop-footer-sign">
-            <div>
-              <span>Operario / Estampador: ____________________________</span>
-            </div>
-            <div>
-              <span>Fecha Finalización: ____ / ____ / ________</span>
-            </div>
-            <div>
-              <span>Firma Visto Bueno: ____________________</span>
-            </div>
           </div>
         </div>
       </div>
