@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </label>
         
         <div class="image-dropzone ${garment.imagePreviewUrl ? 'has-image' : ''}" id="dropzone-${garment.id}">
-          <input type="file" id="file-${garment.id}" accept="image/*" style="display:none" capture="environment">
+          <input type="file" id="file-${garment.id}" accept="image/*" style="display:none">
           
           <div class="dropzone-prompt" style="${garment.imagePreviewUrl ? 'display:none' : 'display:flex'}">
             <div class="dropzone-icon">📷</div>
