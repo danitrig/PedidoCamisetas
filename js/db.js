@@ -137,23 +137,10 @@ class DatabaseService {
       }
 
       if (item.imageFile) {
-        // Comprimir imagen para optimizar datos
+        // Comprimir imagen para optimizar datos (ligera y nítida)
         const compressedBlob = await this.compressImage(item.imageFile);
-
-        if (this.isCloud && this.storage) {
-          try {
-            // Subir a Firebase Storage si está habilitado
-            const storageRef = this.storage.ref(`orders/${orderId}/prenda_${i + 1}_${Date.now()}.jpg`);
-            const uploadTask = await storageRef.put(compressedBlob);
-            imageUrl = await uploadTask.ref.getDownloadURL();
-          } catch (storageErr) {
-            console.warn("Firebase Storage no activo o requiere facturación Blaze. Guardando foto comprimida directamente en Firestore:", storageErr);
-            imageUrl = await this.blobToDataURL(compressedBlob);
-          }
-        } else {
-          // Guardar como DataURL directamente en Firestore / Local
-          imageUrl = await this.blobToDataURL(compressedBlob);
-        }
+        // Guardar directamente como DataURL en Firestore (inmediato, 100% gratis, sin bloqueos de Storage)
+        imageUrl = await this.blobToDataURL(compressedBlob);
       } else if (item.existingImageUrl || item.imageUrl) {
         imageUrl = item.existingImageUrl || item.imageUrl;
       }

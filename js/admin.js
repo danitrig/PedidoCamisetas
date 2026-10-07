@@ -673,18 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         if (file) {
           const compressedBlob = await window.dbService.compressImage(file);
-          if (window.dbService.isCloud && window.dbService.storage) {
-            try {
-              const storageRef = window.dbService.storage.ref(`orders/${activeOrder.orderCode}/prenda_${Date.now()}.jpg`);
-              const uploadTask = await storageRef.put(compressedBlob);
-              imageUrl = await uploadTask.ref.getDownloadURL();
-            } catch (storageErr) {
-              console.warn("Storage requiere facturación Blaze, guardando foto comprimida en Firestore:", storageErr);
-              imageUrl = await window.dbService.blobToDataURL(compressedBlob);
-            }
-          } else {
-            imageUrl = await window.dbService.blobToDataURL(compressedBlob);
-          }
+          imageUrl = await window.dbService.blobToDataURL(compressedBlob);
         }
 
         const productData = {
