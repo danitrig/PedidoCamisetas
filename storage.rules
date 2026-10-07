@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Permitir subir imágenes de prendas asociadas a pedidos
+    // - Cualquier cliente puede subir imágenes para sus pedidos (tamaño máx 15MB)
+    // - Las imágenes son legibles públicamente para mostrar la vista previa y taller
+    match /orders/{orderId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource.size < 15 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas para pedidos:
+    // - Cualquier cliente puede crear un nuevo pedido
+    // - Cualquier cliente puede leer su propio pedido para consultar el estado (o lectura general)
+    // - Solo el administrador autenticado puede editar (ej. número de seguimiento, estado) o eliminar pedidos
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if request.auth != null;
+    }
+  }
+}

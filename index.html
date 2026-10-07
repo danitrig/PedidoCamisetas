@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>CustomWear Orders | Gestión y Pedidos de Ropa Personalizada</title>
+  <meta name="description" content="Plataforma para encargar y gestionar pedidos de ropa personalizada, camisetas deportivas, dorsales y números con seguimiento en tiempo real.">
+  <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
+
+  <!-- Estilos Principales -->
+  <link rel="stylesheet" href="css/index.css">
+
+  <!-- Firebase SDK (Compat v10 para soporte universal y CDN rápido) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+  <!-- html2pdf.js para generación de PDFs con imágenes y estilos limpios -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+  <!-- ========================================================================
+       BARRA DE NAVEGACIÓN SUPERIOR
+       ======================================================================== -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="#" class="brand-link" id="brand-home-link">
+        <img src="assets/logo.jpg" alt="CustomWear Orders" class="brand-logo-img">
+        <div class="brand-text">
+          <h1>CustomWear</h1>
+          <span>Pedidos & Personalización</span>
+        </div>
+      </a>
+
+      <div class="nav-actions">
+        <button type="button" class="btn btn-sm btn-secondary" id="btn-open-track" title="Consultar mi pedido">
+          <span>🔍</span>
+          <span>Rastrear Pedido</span>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-secondary" id="btn-nav-admin" title="Panel de Administrador">
+          <span>🔒</span>
+          <span>Acceso Admin</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       VISTA CLIENTE: FORMULARIO DE CREACIÓN DE PEDIDO
+       ======================================================================== -->
+  <main id="view-customer-order">
+    <!-- Hero Banner -->
+    <section class="hero-section">
+      <div class="container">
+        <div class="hero-pill">
+          <span>✨</span>
+          <span>Personalización Deportiva & Textil</span>
+        </div>
+        <h2 class="hero-title">
+          Encarga tus <span class="highlight">Prendas Personalizadas</span>
+        </h2>
+        <p class="hero-description">
+          Rellena tus datos de entrega y añade cada prenda con su foto de referencia, talla, nombre y dorsal personalizado.
+        </p>
+      </div>
+    </section>
+
+    <div class="container">
+      <form id="order-form" autocomplete="on">
+        
+        <!-- SECCIÓN 1: CABECERA DEL PEDIDO -->
+        <div class="form-card">
+          <div class="card-header-bar">
+            <div class="card-title-group">
+              <div class="card-icon">📋</div>
+              <div>
+                <h2>Datos del Pedido y Entrega</h2>
+                <p>Información necesaria para el envío y facturación</p>
+              </div>
+            </div>
+            <span class="badge badge-processing">Paso 1 de 2</span>
+          </div>
+
+          <div class="grid-3">
+            <div class="form-group">
+              <label class="form-label" for="order-date">
+                <span>Fecha del Pedido</span>
+                <span class="req">*</span>
+              </label>
+              <input type="date" id="order-date" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="first-name">
+                <span>Nombre</span>
+                <span class="req">*</span>
+              </label>
+              <input type="text" id="first-name" class="form-control" placeholder="Ej: Carlos" required autocomplete="given-name">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="last-name">
+                <span>Apellidos</span>
+                <span class="req">*</span>
+              </label>
+              <input type="text" id="last-name" class="form-control" placeholder="Ej: García López" required autocomplete="family-name">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="shipping-address">
+              <span>Dirección de Envío Completa</span>
+              <span class="req">*</span>
+            </label>
+            <input type="text" id="shipping-address" class="form-control" placeholder="Calle, Número, Piso/Puerta, Código Postal, Ciudad y Provincia" required autocomplete="street-address">
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="phone-number">
+                <span>Número de Teléfono (WhatsApp)</span>
+                <span class="req">*</span>
+              </label>
+              <input type="tel" id="phone-number" class="form-control" placeholder="Ej: +34 612 345 678" required autocomplete="tel">
+              <small style="color:var(--text-muted); font-size:0.75rem;">Se usará para notificarte el seguimiento del paquete por WhatsApp.</small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email-address">
+                <span>Correo Electrónico</span>
+                <span class="req">*</span>
+              </label>
+              <input type="email" id="email-address" class="form-control" placeholder="Ej: cliente@gmail.com" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="order-notes">
+              <span>Notas o Instrucciones para la Entrega (Opcional)</span>
+            </label>
+            <textarea id="order-notes" class="form-control" placeholder="Indicaciones para el repartidor, horario preferente, etc."></textarea>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: PRENDAS DEL PEDIDO -->
+        <div class="form-card">
+          <div class="card-header-bar">
+            <div class="card-title-group">
+              <div class="card-icon">👕</div>
+              <div>
+                <h2>Prendas del Pedido</h2>
+                <p>Adjunta la imagen obligatoria, elige la talla y personaliza el nombre y dorsal</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" id="btn-add-garment">
+              <span>➕</span>
+              <span>Añadir otra prenda</span>
+            </button>
+          </div>
+
+          <!-- Contenedor dinámico de prendas -->
+          <div class="items-container" id="garments-container">
+            <!-- Se generará dinámicamente con JavaScript -->
+          </div>
+
+          <!-- Barra resumen y botón añadir inferior -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding-top:1rem; border-top:1px solid var(--border-subtle);">
+            <div style="color:var(--text-secondary); font-size:0.9rem;">
+              ¿Quieres pedir más camisetas o prendas en este mismo envío?
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('btn-add-garment').click()">
+              <span>➕ Añadir prenda adicional</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3: RESUMEN Y ENVÍO -->
+        <div class="order-summary-box">
+          <div class="summary-stats">
+            <div class="stat-item">
+              <span class="stat-val" id="total-items-count">1</span>
+              <span class="stat-lbl">Prendas en el pedido</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-val" style="color:var(--accent-emerald);">ENVÍO</span>
+              <span class="stat-lbl">Con seguimiento en la nube</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-order">
+            <span>🚀 Confirmar y Enviar Pedido</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       VISTA ADMINISTRADOR: PANEL DE CONTROL Y GESTIÓN DE PEDIDOS
+       ======================================================================== -->
+  <main id="view-admin-dashboard" class="admin-view" style="display: none;">
+    <div class="container">
+      
+      <!-- Barra superior de Administrador -->
+      <div class="admin-header-bar" style="margin-top: 1.5rem;">
+        <div class="admin-title-area">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+            <h2>Panel de Administrador</h2>
+            <div id="db-status-indicator"></div>
+          </div>
+          <p>Supervisa todos los pedidos, descarga fotos y asigna los números de seguimiento.</p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-open-firebase-config" title="Configurar conexión Firebase">
+            <span>⚙️ Firebase Cloud</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-refresh-orders" title="Recargar pedidos">
+            <span>🔄 Actualizar</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-back-to-shop">
+            <span>← Ver Tienda</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" id="btn-admin-logout">
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Métricas / KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(0, 242, 254, 0.12); color: var(--accent-cyan);">📦</div>
+          <div>
+            <div class="kpi-value" id="kpi-total-orders">0</div>
+            <div class="kpi-label">Total Pedidos</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.12); color: var(--accent-amber);">⏳</div>
+          <div>
+            <div class="kpi-value" id="kpi-pending-orders">0</div>
+            <div class="kpi-label">Pendientes</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">💳</div>
+          <div>
+            <div class="kpi-value" id="kpi-paid-orders" style="color: #34d399;">0</div>
+            <div class="kpi-label">Pagados</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.12); color: var(--accent-blue);">✂️</div>
+          <div>
+            <div class="kpi-value" id="kpi-process-orders">0</div>
+            <div class="kpi-label">En Fabricación</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.12); color: var(--accent-purple);">🚚</div>
+          <div>
+            <div class="kpi-value" id="kpi-shipped-orders">0</div>
+            <div class="kpi-label">Enviados</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--accent-emerald);">👕</div>
+          <div>
+            <div class="kpi-value" id="kpi-total-garments">0</div>
+            <div class="kpi-label">Total Prendas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros y Búsqueda -->
+      <div class="filter-search-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon-inside">🔍</span>
+          <input type="text" id="admin-search-input" class="form-control" placeholder="Buscar por cliente, teléfono, código o seguimiento...">
+        </div>
+
+        <div class="status-tabs">
+          <button type="button" class="tab-btn active" data-filter="all">Todos</button>
+          <button type="button" class="tab-btn" data-filter="pendiente">Pendientes</button>
+          <button type="button" class="tab-btn" data-filter="pagado">💳 Pagados</button>
+          <button type="button" class="tab-btn" data-filter="en_proceso">En Proceso</button>
+          <button type="button" class="tab-btn" data-filter="enviado">Enviados</button>
+          <button type="button" class="tab-btn" data-filter="entregado">Entregados</button>
+        </div>
+      </div>
+
+      <!-- Listado de Pedidos -->
+      <div class="orders-list" id="admin-orders-list">
+        <!-- Renderizado dinámico -->
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       MODAL 1: SUBIDA Y PROGRESO DEL PEDIDO
+       ======================================================================== -->
+  <div class="modal-overlay" id="upload-progress-modal">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div class="spinner" style="width: 48px; height: 48px; margin-bottom: 1.25rem;"></div>
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 0.5rem;">Guardando tu Pedido...</h3>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;" id="upload-progress-text">
+        Procesando y optimizando imágenes...
+      </p>
+      
+      <div style="background: rgba(255,255,255,0.06); border-radius: var(--radius-full); height: 10px; overflow: hidden; width: 100%;">
+        <div id="upload-progress-bar" style="background: var(--grad-primary); height: 100%; width: 20%; transition: width 0.3s ease;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: CONFIRMACIÓN DE PEDIDO REALIZADO CON ÉXITO
+       ======================================================================== -->
+  <div class="modal-overlay" id="order-success-modal">
+    <div class="modal-box" style="text-align: center; max-width: 520px;">
+      <button type="button" class="modal-close-btn">&times;</button>
+      <div style="font-size: 3.5rem; margin-bottom: 0.5rem; filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.4));">🎉</div>
+      <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem;">
+        ¡Pedido Recibido con Éxito!
+      </h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+        Hemos guardado tu pedido en el sistema. Puedes guardar este código para consultar el estado y el seguimiento de tu envío:
+      </p>
+
+      <div style="background: rgba(0, 242, 254, 0.08); border: 2px dashed rgba(0, 242, 254, 0.4); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">Tu Código de Pedido:</div>
+        <div id="success-order-code" style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 800; color: var(--accent-cyan); letter-spacing: 0.04em; margin-top: 0.25rem;">
+          PED-000000
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <a href="#" target="_blank" class="btn btn-accent btn-lg" id="btn-whatsapp-order">
+          <span>💬 Enviar copia por WhatsApp al vendedor</span>
+        </a>
+        <button type="button" class="btn btn-secondary btn-modal-close">
+          <span>Aceptar y Cerrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: CONSULTA DE ESTADO Y TRACKING (CLIENTE)
+       ======================================================================== -->
+  <div class="modal-overlay" id="track-order-modal">
+    <div class="modal-box">
+      <button type="button" class="modal-close-btn">&times;</button>
+      <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem;">
+        🔍 Consultar Estado de mi Pedido
+      </h3>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.25rem;">
+        Introduce tu código de pedido (ej: PED-123456) o tu número de teléfono:
+      </p>
+
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+        <input type="text" id="track-code-input" class="form-control" placeholder="Código de pedido o Teléfono..." style="font-family: var(--font-mono); font-weight: 600;">
+        <button type="button" class="btn btn-primary" id="btn-search-track">
+          Buscar
+        </button>
+      </div>
+
+      <div id="track-result-container"></div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 4: LOGIN DE ADMINISTRADOR
+       ======================================================================== -->
+  <div class="modal-overlay" id="admin-login-modal">
+    <div class="modal-box" style="max-width: 440px;">
+      <button type="button" class="modal-close-btn">&times;</button>
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔐</div>
+        <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800;">Acceso de Administrador</h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">Inicia sesión para gestionar los pedidos y seguimientos</p>
+      </div>
+
+      <form id="admin-login-form">
+        <div class="form-group">
+          <label class="form-label" for="admin-email-input">Correo Electrónico</label>
+          <input type="email" id="admin-email-input" class="form-control" placeholder="admin@customwear.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="admin-password-input">Contraseña</label>
+          <input type="password" id="admin-password-input" class="form-control" placeholder="••••••••" required>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; margin-bottom: 1.25rem; font-size: 0.78rem; color: var(--text-muted);">
+          💡 <b>Acceso Rápido Demo:</b> Si aún no has conectado Firebase, puedes ingresar con:<br>
+          Usuario: <code>admin@customwear.com</code> | Contraseña: <code>admin1234</code>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-login">
+          Entrar al Panel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 5: DETALLE DE PEDIDO & GESTOR DE SEGUIMIENTO (ADMIN)
+       ======================================================================== -->
+  <div class="modal-overlay" id="admin-order-detail-modal">
+    <div class="modal-box modal-box-lg">
+      <button type="button" class="modal-close-btn">&times;</button>
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Ficha de Pedido</span>
+          <h2 id="detail-order-code" style="font-family: var(--font-mono); font-size: 1.6rem; font-weight: 800; color: var(--accent-cyan);">PED-000000</h2>
+          <span id="detail-order-date" style="font-size: 0.82rem; color: var(--text-secondary);"></span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <select id="detail-status-select" class="form-control" style="width: auto; font-weight: 700;">
+            <option value="pendiente">🟡 Pendiente</option>
+            <option value="pagado">💳 Pagado</option>
+            <option value="en_proceso">🔵 En Fabricación</option>
+            <option value="enviado">🟣 Enviado</option>
+            <option value="entregado">🟢 Entregado</option>
+            <option value="cancelado">🔴 Cancelado</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-admin-add-product" title="Añadir artículo a este pedido">
+            ➕ Producto
+          </button>
+          <button type="button" class="btn btn-sm btn-accent" id="btn-download-pdf-receipt" title="Generar PDF del recibo para el cliente">
+            📄 Recibo PDF
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btnPrintOrder" title="Imprimir ficha de taller">
+            🖨️ Taller
+          </button>
+        </div>
+      </div>
+
+      <!-- Datos del Cliente -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">CLIENTE</span>
+          <div id="detail-customer-name" style="font-weight: 700; font-size: 1rem;">-</div>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">CONTACTO</span>
+          <div id="detail-phone" style="font-weight: 600;">-</div>
+          <div id="detail-email" style="font-size: 0.82rem; color: var(--text-secondary);">-</div>
+          <a href="#" target="_blank" id="btn-direct-whatsapp-customer" class="btn btn-sm btn-secondary" style="margin-top: 0.4rem; padding: 0.25rem 0.6rem; font-size: 0.76rem;">
+            💬 Abrir WhatsApp
+          </a>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">DIRECCIÓN DE ENTREGA</span>
+          <div id="detail-address" style="font-size: 0.88rem; line-height: 1.4;">-</div>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">NOTAS</span>
+          <div id="detail-notes" style="font-size: 0.85rem; color: var(--text-secondary);">-</div>
+        </div>
+      </div>
+
+      <!-- RESUMEN ECONÓMICO: COSTES, PRECIO VENTA Y BENEFICIO -->
+      <div class="financials-card">
+        <div class="fin-item">
+          <span class="fin-label">Cobrado Cliente (Total)</span>
+          <span class="fin-value fin-val-sale" id="fin-total-sale">0.00 €</span>
+        </div>
+        <div class="fin-item">
+          <span class="fin-label">A Pagar Proveedor</span>
+          <span class="fin-value fin-val-cost" id="fin-total-cost">0.00 €</span>
+        </div>
+        <div class="fin-item">
+          <span class="fin-label">Gestión / Envío (Global)</span>
+          <div class="fin-fee-input-wrap">
+            <input type="number" step="0.5" id="fin-global-fee" class="fin-fee-input" value="0.00" title="Gastos de cambio de moneda, portes o gestión">
+            <span style="font-weight:700; color:#fbbf24;">€</span>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-save-global-fee" style="padding:0.25rem 0.55rem; font-size:0.75rem;" title="Guardar">💾</button>
+          </div>
+        </div>
+        <div class="fin-item">
+          <span class="fin-label">Beneficio / Margen Neto</span>
+          <span class="fin-value fin-val-profit" id="fin-total-profit">0.00 €</span>
+        </div>
+      </div>
+
+      <!-- GESTIÓN DE NÚMERO DE SEGUIMIENTO -->
+      <div class="tracking-manager-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h4 style="font-size: 1rem; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 0.5rem;">
+              <span>🚚</span>
+              <span>Número de Seguimiento del Envío</span>
+            </h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem;">
+              Asigna el código de envío cuando lo tengas. El cliente podrá rastrearlo y puedes avisarle por WhatsApp en 1 clic.
+            </p>
+          </div>
+        </div>
+
+        <div class="tracking-inputs-flex">
+          <select id="detail-carrier-select" class="form-control" style="max-width: 170px;">
+            <option value="Correos">Correos España</option>
+            <option value="Correos Express">Correos Express</option>
+            <option value="SEUR">SEUR</option>
+            <option value="GLS">GLS</option>
+            <option value="MRW">MRW</option>
+            <option value="DHL">DHL Express</option>
+            <option value="Nacex">Nacex</option>
+            <option value="Otro">Otro Transporte</option>
+          </select>
+
+          <input type="text" id="detail-tracking-input" class="form-control" placeholder="Pega el número de seguimiento (ej: PK092182903ES)" style="font-family: var(--font-mono); font-weight: 700; flex: 1;">
+
+          <button type="button" class="btn btn-primary" id="btn-save-tracking">
+            Guardar Seguimiento 💾
+          </button>
+        </div>
+
+        <div style="margin-top: 0.85rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+          <button type="button" class="btn btn-sm btn-accent" id="btn-notify-whatsapp">
+            <span>📲 Notificar Seguimiento por WhatsApp al Cliente</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TABLA DE PRENDAS DEL PEDIDO (FORMATO ESTILO CAPTURA) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+          <span>👕</span>
+          <span>Artículos del Pedido</span>
+          <span id="detail-items-count-badge" class="badge" style="background: rgba(255,255,255,0.08); color: #fff;">0</span>
+        </h3>
+        <button type="button" class="btn btn-sm btn-secondary" id="btn-add-product-table">
+          ➕ Añadir Producto
+        </button>
+      </div>
+
+      <div class="products-mgmt-table-wrap">
+        <table class="products-mgmt-table">
+          <thead>
+            <tr>
+              <th style="width: 55px;">FOTO</th>
+              <th>VERSIÓN</th>
+              <th>TALLA</th>
+              <th>NOMBRE / Nº</th>
+              <th>PARCHE</th>
+              <th>PRECIO VENTA</th>
+              <th>COSTE PROV.</th>
+              <th style="text-align: right;">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody id="detail-products-tbody">
+            <!-- Filas generadas dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Botón Eliminar y Cerrar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle);">
+        <button type="button" class="btn btn-sm btn-outline-danger" id="btn-delete-order">
+          🗑️ Eliminar este pedido
+        </button>
+        <button type="button" class="btn btn-secondary btn-modal-close">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 6: ZOOM DE IMAGEN EN ALTA RESOLUCIÓN
+       ======================================================================== -->
+  <div class="modal-overlay" id="image-zoom-modal">
+    <div style="position: relative; max-width: 90vw; max-height: 90vh; text-align: center;">
+      <button type="button" class="modal-close-btn" style="top: -15px; right: -15px; background: rgba(0,0,0,0.8);">&times;</button>
+      <img src="" alt="Prenda ampliada" id="zoomed-image" class="image-zoom-content">
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 7: CONFIGURACIÓN FÁCIL DE FIREBASE (SIN EDITAR ARCHIVOS)
+       ======================================================================== -->
+  <div class="modal-overlay" id="firebase-config-modal">
+    <div class="modal-box">
+      <button type="button" class="modal-close-btn">&times;</button>
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="font-size: 1.8rem;">⚡</span>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 800;">Conectar Firebase Cloud (Gratuito)</h3>
+          <p style="color: var(--text-secondary); font-size: 0.85rem;">Pega las credenciales de tu proyecto de Firebase para guardar fotos y pedidos en la nube real.</p>
+        </div>
+      </div>
+
+      <form id="firebase-config-form">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">apiKey</label>
+            <input type="text" id="cfg-api-key" class="form-control" placeholder="AIzaSy..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">authDomain</label>
+            <input type="text" id="cfg-auth-domain" class="form-control" placeholder="tu-app.firebaseapp.com" required>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">projectId</label>
+            <input type="text" id="cfg-project-id" class="form-control" placeholder="tu-app-id" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">storageBucket</label>
+            <input type="text" id="cfg-storage-bucket" class="form-control" placeholder="tu-app.appspot.com" required>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">messagingSenderId</label>
+            <input type="text" id="cfg-sender-id" class="form-control" placeholder="123456789">
+          </div>
+          <div class="form-group">
+            <label class="form-label">appId</label>
+            <input type="text" id="cfg-app-id" class="form-control" placeholder="1:1234:web:abcd">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem;">
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-to-demo">
+            Restablecer a Modo Demo
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Guardar y Conectar ☁️
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 8: AÑADIR / EDITAR ARTÍCULO EN PEDIDO (ADMIN)
+       ======================================================================== -->
+  <div class="modal-overlay" id="product-edit-modal">
+    <div class="modal-box" style="max-width: 580px;">
+      <button type="button" class="modal-close-btn">&times;</button>
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <span style="font-size: 1.8rem;">👕</span>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 800;" id="product-modal-title">
+            Editar Artículo
+          </h3>
+          <p style="color: var(--text-secondary); font-size: 0.85rem;">Configura versión, talla, dorsal, precio de venta y coste proveedor.</p>
+        </div>
+      </div>
+
+      <form id="product-edit-form">
+        <input type="hidden" id="edit-item-index" value="-1">
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="edit-item-version">Versión</label>
+            <select id="edit-item-version" class="form-control" style="font-weight: 700;">
+              <option value="FAN">FAN</option>
+              <option value="PLAYER">PLAYER</option>
+              <option value="RETRO">RETRO</option>
+              <option value="KIDS">KIDS</option>
+              <option value="SIMPLE">SIMPLE</option>
+              <option value="OTRA">OTRA</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-item-size">Talla <span class="req">*</span></label>
+            <input type="text" id="edit-item-size" class="form-control" placeholder="Ej: XL, M, 22, 26..." required>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="edit-item-name">Nombre a Estampar</label>
+            <input type="text" id="edit-item-name" class="form-control" placeholder="Ej: CUCURELLA, OLMO...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-item-number">Número / Dorsal</label>
+            <input type="text" id="edit-item-number" class="form-control" placeholder="Ej: 24, 10, 7...">
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="form-group">
+            <label class="form-label" for="edit-item-patch">Parche</label>
+            <select id="edit-item-patch" class="form-control" style="font-weight: 700;">
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+              <option value="LIGA">LIGA</option>
+              <option value="CHAMPIONS">CHAMPIONS</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-item-saleprice">
+              <span>Precio Venta (€)</span>
+              <span class="req">*</span>
+            </label>
+            <input type="number" step="0.5" id="edit-item-saleprice" class="form-control" placeholder="15.00" required style="font-weight: 700; color: #34d399;">
+            <small style="color: var(--text-muted); font-size: 0.72rem;">Lo que paga el cliente</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-item-costprice">
+              <span>Precio Coste (€)</span>
+              <span class="req">*</span>
+            </label>
+            <input type="number" step="0.5" id="edit-item-costprice" class="form-control" placeholder="10.00" required style="font-weight: 700; color: #38bdf8;">
+            <small style="color: var(--text-muted); font-size: 0.72rem;">Lo que pagas a fábrica</small>
+          </div>
+        </div>
+
+        <!-- Imagen de la prenda -->
+        <div class="form-group">
+          <label class="form-label">
+            <span>Foto de la Prenda</span>
+            <span class="req">*</span>
+          </label>
+          <div style="display: flex; align-items: center; gap: 1rem; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-medium);">
+            <img src="" id="edit-item-preview-img" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-subtle); display: none;">
+            <div style="flex: 1;">
+              <input type="file" id="edit-item-file-input" accept="image/*" class="form-control" style="font-size: 0.82rem; padding: 0.4rem;">
+              <input type="hidden" id="edit-item-existing-img-url" value="">
+              <small style="color: var(--text-secondary); font-size: 0.75rem;">Si no seleccionas un archivo nuevo, se mantendrá la foto actual.</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary btn-modal-close">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-edited-product">Guardar Artículo 💾</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 9: VISUALIZADOR INTERACTIVO DEL RECIBO DEL CLIENTE (PDF & PRINT)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-client-receipt">
+    <div class="doc-modal-box">
+      <!-- Barra superior con acciones de exportación -->
+      <div class="doc-top-bar">
+        <div class="doc-top-bar-title">
+          <span>📄</span>
+          <span>Recibo Oficial del Cliente</span>
+          <span style="font-size:0.75rem; background:rgba(16,185,129,0.2); color:#34d399; padding:2px 8px; border-radius:4px; font-weight:700;">SOLO PRECIOS CLIENTE</span>
+        </div>
+
+        <div class="doc-top-bar-actions">
+          <button type="button" class="btn btn-sm btn-primary" id="btn-receipt-download-pdf" title="Descargar como archivo PDF">
+            📥 Descargar PDF
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-receipt-print-native" title="Imprimir directamente en impresora o guardar PDF">
+            🖨️ Imprimir A4
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-receipt-send-wa" title="Enviar copia por WhatsApp">
+            💬 WhatsApp
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger btn-modal-close" style="padding: 0.35rem 0.75rem;">
+            ✖️ Cerrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Scroll del documento visual -->
+      <div class="doc-scroll-viewport">
+        <div id="printable-client-receipt" class="paper-sheet">
+          <div class="receipt-header">
+            <div class="receipt-brand-logo">
+              <img src="assets/logo.jpg" alt="Logo" class="receipt-logo-img">
+              <div class="receipt-brand-title">
+                <h1>CUSTOMWEAR ORDERS</h1>
+                <p>Comprobante & Justificante Oficial de Pedido</p>
+              </div>
+            </div>
+
+            <div class="receipt-meta">
+              <div class="receipt-order-code" id="receipt-order-code">PED-000000</div>
+              <div class="receipt-date" id="receipt-order-date">07/10/2026</div>
+              <div style="margin-top:4px;" id="receipt-status-badge"></div>
+            </div>
+          </div>
+
+          <!-- Datos del Cliente y Envío -->
+          <div class="receipt-client-box">
+            <div>
+              <div><strong>Destinatario:</strong> <span id="receipt-customer-name">-</span></div>
+              <div><strong>Teléfono:</strong> <span id="receipt-customer-phone">-</span></div>
+              <div><strong>Email:</strong> <span id="receipt-customer-email">-</span></div>
+            </div>
+            <div>
+              <div><strong>Dirección de Entrega:</strong></div>
+              <div id="receipt-customer-address" style="line-height:1.4;">-</div>
+              <div style="margin-top:6px;"><strong>Seguimiento Envío:</strong> <span id="receipt-customer-tracking">Pendiente de asignación</span></div>
+            </div>
+          </div>
+
+          <!-- Tabla de Prendas -->
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">FOTO</th>
+                <th>ARTÍCULO / VERSIÓN</th>
+                <th>TALLA</th>
+                <th>PERSONALIZACIÓN</th>
+                <th>PARCHE</th>
+                <th style="text-align: right;">PRECIO</th>
+              </tr>
+            </thead>
+            <tbody id="receipt-items-tbody">
+              <!-- Generado dinámicamente -->
+            </tbody>
+          </table>
+
+          <!-- Desglose de Totales -->
+          <div class="receipt-total-section">
+            <div class="receipt-total-card">
+              <div class="lbl">Total Abonado por el Cliente</div>
+              <div class="val" id="receipt-total-amount">0.00 €</div>
+              <div style="font-size:11px; color:#166534; margin-top:2px;" id="receipt-fee-note"></div>
+            </div>
+          </div>
+
+          <div style="margin-top: 35px; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.5;">
+            Documento emitido electrónicamente &bull; Muchas gracias por tu confianza &bull; Para cualquier consulta contáctanos indicando tu código de pedido.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 10: FICHA DE TALLER & PRODUCCIÓN (PROFESIONAL PARA OPERARIOS)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-workshop-sheet">
+    <div class="doc-modal-box">
+      <!-- Barra superior con acciones de taller -->
+      <div class="doc-top-bar">
+        <div class="doc-top-bar-title">
+          <span>🏭</span>
+          <span>Ficha de Fabricación & Taller Textil</span>
+        </div>
+
+        <div class="doc-top-bar-actions">
+          <button type="button" class="btn btn-sm btn-primary" id="btn-workshop-print-native" title="Imprimir ficha para los operarios del taller">
+            🖨️ Imprimir Ficha A4
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-workshop-download-pdf" title="Guardar como PDF de producción">
+            📥 Guardar PDF
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger btn-modal-close" style="padding: 0.35rem 0.75rem;">
+            ✖️ Cerrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Scroll del documento visual -->
+      <div class="doc-scroll-viewport">
+        <div id="printable-workshop-sheet" class="paper-sheet">
+          <div class="workshop-header">
+            <div class="workshop-title-badge">
+              <span>🏭</span>
+              <span>ORDEN DE PRODUCCIÓN & ESTAMPACIÓN</span>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-family:'JetBrains Mono', monospace; font-size:22px; font-weight:900; color:#0f172a;" id="workshop-order-code">PED-000000</span>
+              <div style="font-size:12px; color:#64748b;" id="workshop-order-date">07/10/2026</div>
+            </div>
+          </div>
+
+          <!-- Cuadrícula de Datos de Taller -->
+          <div class="workshop-meta-grid">
+            <div class="workshop-meta-item">
+              <div class="meta-lbl">Cliente</div>
+              <div class="meta-val" id="workshop-customer-name">-</div>
+            </div>
+            <div class="workshop-meta-item">
+              <div class="meta-lbl">Contacto / Teléfono</div>
+              <div class="meta-val" id="workshop-customer-phone">-</div>
+            </div>
+            <div class="workshop-meta-item">
+              <div class="meta-lbl">Total Prendas a Fabricar</div>
+              <div class="meta-val" style="color:#0284c7;" id="workshop-items-count">-</div>
+            </div>
+          </div>
+
+          <!-- Notas para el taller si existen -->
+          <div id="workshop-notes-banner" style="display:none; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:10px 14px; margin-bottom:18px; font-size:13px; color:#92400e;">
+            <strong>⚠️ Observaciones de entrega/confección:</strong> <span id="workshop-notes-text"></span>
+          </div>
+
+          <!-- Tarjetas individuales de confección con fotos grandes y dorsales claros -->
+          <div id="workshop-cards-container">
+            <!-- Renderizado dinámico -->
+          </div>
+
+          <!-- Pie de control de calidad -->
+          <div class="workshop-footer-sign">
+            <div>
+              <span>Operario / Estampador: ____________________________</span>
+            </div>
+            <div>
+              <span>Fecha Finalización: ____ / ____ / ________</span>
+            </div>
+            <div>
+              <span>Firma Visto Bueno: ____________________</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificaciones Flotantes (Toasts) -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Pie de Página -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>CustomWear Orders &copy; 2026 &bull; Sistema de Gestión Textil &bull; Optimizado para dispositivos móviles y escritorio</p>
+    </div>
+  </footer>
+
+  <!-- Scripts de la Aplicación -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
